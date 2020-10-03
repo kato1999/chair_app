@@ -1,6 +1,8 @@
 @charset "utf-8";
 @import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap');
 
+
+
 body{
     background-color: rgb(255, 250, 245);
 }
@@ -24,4 +26,8 @@ body{
 
 .head_link{
     font-weight: bold;
+}
+
+.pic{
+    margin-left: 50px;
 }

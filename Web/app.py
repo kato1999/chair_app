@@ -14,6 +14,10 @@ import datetime as dt
 import numpy as np
 import sqlite3
 
+from matplotlib import rcParams
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['Hiragino Maru Gothic Pro', 'Yu Gothic', 'Meirio', 'Takao', 'IPAexGothic', 'IPAPGothic', 'Noto Sans CJK JP']
+
 
 app = Flask(__name__)
 
@@ -51,7 +55,7 @@ def img_show():
     # 軸などの設定
     # plt.title('Graph')
     plt.xlabel('time')
-    plt.ylabel('percentage')
+    plt.ylabel('わりあい')
     plt.grid()
 
     axes = fig.add_subplot(111)
@@ -59,15 +63,20 @@ def img_show():
     plt.xticks(rotation=20)
     xaxis.set_major_formatter(DateFormatter('%m.%d %H:%M'))
     y_min, y_max = axes.get_ylim()
-    axes.set_ylim(0, 1)
+    axes.set_ylim(0, 1.1)
 
     # 値の設定
     # y = np.random.random(24*6)
     # x = pd.date_range('2016-06-02 05:00:00',periods=24*6,freq='10T')
 
     XY = get_from_db()
-    x = XY[0]
-    y = XY[1]
+    if len(XY[0])==0:
+        time = str(dt.datetime.now())[:19]
+        x = pd.date_range(time,periods=24*6,freq='10T')
+        y = [-1]*24*6
+    else:
+        x = XY[0]
+        y = XY[1]
 
     axes.plot(x, y)
 
@@ -96,28 +105,25 @@ def get_from_db():
     X = []
     Y = []
 
-    memo = ""
-    for i in range(len(result)//30):
+    counter =5
+    for i in range(len(result)//counter):
         # 2016-06-02 05:00:00
-        memo = str(result[i*30][0])
+        memo = str(result[i*counter][0])
+
         time = dt.datetime(int(memo[:4]), int(memo[4:6]), int(memo[6:8]), int(memo[8:10]), int(memo[10:12]), 00)
-        # time = 22
-        # print(str(memo[10:12])+"\n\n",flush=True)
+        
         cnt = 0
-        for j in range(30):
-            cnt += result[i*30+j][1]
+        for j in range(counter):
+            cnt += result[i*counter+j][1]
         X.append(time)
-        Y.append(cnt/30)
+        Y.append(cnt/counter)
 
 
     con.commit()
     cur.close()
     con.close()
-    
     return [X,Y]
 
-# 年(4桁)月日時間(24時間表示)分秒,(年以外は2桁表示)
-# ex:20201003160502
 
 
 if __name__ == "__main__":
