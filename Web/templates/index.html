@@ -16,15 +16,18 @@
     </nav>
   </header>
 
-  <div class="container"><div class="row">
-      {% block content %}{% endblock %}
-  </div></div>
-  <div class="w-50 text-center pic">
-    姿勢の悪さ
-    <img src="img" class="pic_img">
+  <div class="content">
+    <div class="w-100 text-center pic area" id="judge">
+      <div class="h3 mt-5 graph_title">姿勢スコア</div>
+      <img src="/img?name=judge" class="pic_img w-100">
+    </div>
+
+    <div class="w-100 text-center pic area" id="exist">
+      <div class="h3 mt-5 graph_title">集中度</div>
+      <img src="/img?name=exist" class="pic_img w-100">
+    </div>
   </div>
 
-  {{result}}
 
 </body>
 </html>

@@ -1,11 +1,12 @@
 import random
-from flask import Flask, render_template, make_response, Markup
+from flask import Flask, render_template, make_response, Markup, request
 from io import BytesIO
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import matplotlib.pyplot as plt
 from matplotlib.dates import drange
 from matplotlib.dates import DateFormatter
+import matplotlib as mpl
 
 import datetime as dt
 
@@ -13,6 +14,10 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 import sqlite3
+
+# 文字コードエラーへの対応
+import locale
+locale.setlocale(locale.LC_ALL, '')
 
 from matplotlib import rcParams
 rcParams['font.family'] = 'sans-serif'
@@ -54,29 +59,39 @@ def img_show():
 
     # 軸などの設定
     # plt.title('Graph')
-    plt.xlabel('time')
-    plt.ylabel('わりあい')
     plt.grid()
 
     axes = fig.add_subplot(111)
     xaxis = axes.xaxis
+    yaxis = axes.yaxis
     plt.xticks(rotation=20)
-    xaxis.set_major_formatter(DateFormatter('%m.%d %H:%M'))
+    xaxis.set_major_formatter(DateFormatter('%m月%d日 %H:%M:%S'))
+    plt.xlabel('時間', fontsize=15)
+    plt.ylabel('スコア', fontsize=15)
     y_min, y_max = axes.get_ylim()
-    axes.set_ylim(0, 1.1)
-
-    # 値の設定
-    # y = np.random.random(24*6)
-    # x = pd.date_range('2016-06-02 05:00:00',periods=24*6,freq='10T')
+    axes.set_ylim(0, 103)
 
     XY = get_from_db()
-    if len(XY[0])==0:
-        time = str(dt.datetime.now())[:19]
-        x = pd.date_range(time,periods=24*6,freq='10T')
-        y = [-1]*24*6
-    else:
-        x = XY[0]
-        y = XY[1]
+
+    name = request.args.get('name')
+    if name=="judge":
+        if len(XY[0])==0:
+            time = str(dt.datetime.now())[:19]
+            x = pd.date_range(time,periods=24*6,freq='10T')
+            y = [-1]*24*6
+        else:
+            x = XY[0]
+            y = XY[1]
+
+    elif name=="exist":
+        yaxis.set_major_formatter(mpl.ticker.PercentFormatter(100))
+        if len(XY[0])==0:
+            time = str(dt.datetime.now())[:19]
+            x = pd.date_range(time,periods=24*6,freq='10T')
+            y = [-1]*24*6
+        else:
+            x = XY[0]
+            y = XY[2]
 
     axes.plot(x, y)
 
@@ -104,25 +119,37 @@ def get_from_db():
 
     X = []
     Y = []
+    X_exist = []
+    Y_exist = []
 
-    counter =5
+    counter = 60
     for i in range(len(result)//counter):
         # 2016-06-02 05:00:00
         memo = str(result[i*counter][0])
-
-        time = dt.datetime(int(memo[:4]), int(memo[4:6]), int(memo[6:8]), int(memo[8:10]), int(memo[10:12]), 00)
+        time = dt.datetime(int(memo[:4]), int(memo[4:6]), int(memo[6:8]), int(memo[8:10]), int(memo[10:12]), int(memo[12:14]))
         
-        cnt = 0
-        for j in range(counter):
-            cnt += result[i*counter+j][1]
-        X.append(time)
-        Y.append(cnt/counter)
+        cnt_good = 0
+        cnt_all = 0.01
 
+        cnt_exist = 0
+        cnt_exist_all = 0.01
+
+        for j in range(counter):
+            if result[i*counter+j][1]==1:
+                cnt_good += 1
+            if result[i*counter+j][2]==1:
+                cnt_exist += 1
+            cnt_all += 1
+            cnt_exist_all += 1
+
+        X.append(time)
+        Y.append((cnt_good/cnt_all)*100)
+        Y_exist.append((cnt_exist/cnt_all)*100)
 
     con.commit()
     cur.close()
     con.close()
-    return [X,Y]
+    return [X, Y, Y_exist]
 
 
 
